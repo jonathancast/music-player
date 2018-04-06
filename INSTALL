@@ -1,0 +1,14 @@
+#! /bin/sh
+
+cpanm -l local-lib -n $(cat ./perl-deps) &&
+mkdir -p data &&
+rm -f data/priorities.db &&
+perl -e '
+    use local::lib q{local-lib};
+    use lib q{lib};
+
+    use JCC::Music::Player::Schema;
+
+    JCC::Music::Player::Schema->connect(q{dbi:SQLite:dbname=data/priorities.db}, q{}, q{})->deploy();
+' &&
+true

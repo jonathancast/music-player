@@ -1,0 +1,8 @@
+DBIx::Class::Candy@0.005003
+DBIx::Class::Helpers@2.033004
+DBIx::Class@0.082841
+Exporter::Tiny@1.000000
+IPC::System::Simple@1.25
+Moops@0.034
+SQL::Translator@0.11024
+Term::ReadKey@2.37

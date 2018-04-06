@@ -1,0 +1,102 @@
+#! /usr/bin/env perl
+
+use v5.12;
+use warnings;
+
+use FindBin;
+use local::lib $FindBin::Bin =~ s{/bin$}{/local-lib}r;
+use lib $FindBin::Bin =~ s{/bin$}{/lib}r;
+
+my $project_dir = $FindBin::Bin =~ s{/bin$}{}r;
+
+use IO::Select;
+use Term::ReadKey;
+
+use POSIX qw/ WNOHANG setsid /;
+use autodie qw/ :all /;
+
+use JCC::Music::Player::Schema;
+
+$|++;
+
+my $child_pid;
+
+$SIG{INT} = sub { kill_child(); exit 0; };
+$SIG{TERM} = sub { kill_child(); exit 1; };
+
+my $schema = JCC::Music::Player::Schema->connect("dbi:SQLite:dbname=$project_dir/data/priorities.db", '', '');
+
+open my $fh, '-|', 'find', qq{$ENV{HOME}/Music};
+while (my $fn = <$fh>) {
+    chomp($fn);
+
+    if (-f $fn && ($fn =~ m{\.mp3$} || $fn =~ m{\.ogg$})) {
+        $schema->resultset('Track')->find_or_create(
+            { filename => $fn, score => 1, },
+            { key => 'filename', },
+        );
+    }
+}
+close $fh;
+
+my $total_score = $schema->resultset('Track')->get_column('score')->sum();
+
+ReadMode 3;
+
+track: while (1) {
+    my $target = rand() * $total_score;
+
+    my $row = $schema->resultset('Track')->nth_row($target)->single();
+
+    print $row->filename, ' ';
+
+    $child_pid = play($row->filename);
+
+    while (!waitpid($child_pid, WNOHANG)) {
+        if (defined(my $key = ReadKey(1))) {
+            if ($key eq 'j') {
+                kill_child();
+                $row->add_score(0);
+                print qq{\n};
+                next track;
+            }
+        }
+    }
+
+    undef $child_pid;
+
+    $row->add_score(1);
+
+    print qq{\n};
+}
+
+exit(0);
+
+sub play {
+    my ($fn) = @_;
+
+    my $pid = fork();
+    if ($pid) {
+        return $pid;
+    } else {
+        open STDIN, '<', '/dev/null';
+        open STDOUT, '>', '/dev/null';
+        open STDIN, '>&', \*STDOUT;
+        if ($fn =~ m{\.ogg$}) {
+            exec 'ogg123', '-q', $fn;
+        } elsif ($fn =~ m{\.mp3$}) {
+            exec 'mpg123', '-q', $fn;
+        }
+        exit 1;
+    }
+}
+
+sub kill_child {
+    if ($child_pid) {
+        kill 'INT', $child_pid;
+        waitpid($child_pid, 0);
+        undef $child_pid;
+    }
+}
+
+END { ReadMode 0; print qq{\n}; }
