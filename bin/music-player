@@ -53,6 +53,8 @@ track: while (1) {
 
     my $row = $schema->resultset('Track')->nth_row($target)->single();
 
+    next unless $row;
+
     print $row->filename, ' ';
 
     $child_pid = play($row->filename);
