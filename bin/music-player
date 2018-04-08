@@ -39,6 +39,11 @@ while (my $fn = <$fh>) {
 }
 close $fh;
 
+my $rs = $schema->resultset('Track')->search();
+while (my $row = $rs->next()) {
+    $row->delete() unless -f $row->filename;
+}
+
 my $total_score = $schema->resultset('Track')->get_column('score')->sum();
 
 ReadMode 3;
