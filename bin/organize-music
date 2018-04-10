@@ -1,0 +1,67 @@
+#! /usr/bin/env perl
+
+use v5.12;
+use warnings;
+
+use FindBin;
+use local::lib $FindBin::Bin =~ s{/bin$}{/local-lib}r;
+use lib $FindBin::Bin =~ s{/bin$}{/lib}r;
+
+use autodie;
+
+use Music::Tag;
+
+use Getopt::Long;
+
+use File::Basename qw/ dirname /;
+
+GetOptions(
+    'n|dry-run' => \my $dry_run,
+) or die "Invalid command-line argument";
+
+if (@ARGV) {
+    organize($_) for @ARGV;
+} else {
+    organize(qq{$ENV{HOME}/Music});
+}
+
+sub organize {
+    my ($dir) = @_;
+
+    open my $fh, '-|', 'find', $dir;
+    binmode($fh, ':utf8');
+    while (my $fn = <$fh>) {
+        chomp($fn);        
+
+        if (-f $fn && ($fn =~ m{\.mp3$} || $fn =~ m{\.ogg$})) {
+            my ($ext) = $fn =~ m{\.(mp3|ogg)$};
+            my $info = Music::Tag->new($fn);
+            $info->get_tag();
+
+            my $dest = sprintf("%s/%s/%s/%s.%s",
+                qq{$ENV{HOME}/Music},
+                escape_fn($info->albumartist // $info->artist),
+                escape_fn($info->album),
+                escape_fn($info->title),
+                $ext,
+            );
+
+            if ($fn ne $dest) {
+                if ($dry_run) {
+                    say "Re-name $fn to $dest";
+                } else {
+                    system 'mkdir', '-p', dirname($dest) and die "Couldn't create $dest";
+                    system 'mv', $fn, $dest and die "Couldn't rename $fn";
+                }
+            }
+        }
+    }
+    close $fh;
+
+}
+
+sub escape_fn {
+    my ($comp) = @_;
+
+    return $comp =~ s{/}{_}rg;
+}
