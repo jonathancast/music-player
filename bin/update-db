@@ -1,0 +1,20 @@
+#! /usr/bin/env perl
+
+use v5.12;
+use warnings;
+
+use FindBin;
+use local::lib $FindBin::Bin =~ s{/bin$}{/local-lib}r;
+use lib $FindBin::Bin =~ s{/bin$}{/lib}r;
+
+my $project_dir = $FindBin::Bin =~ s{/bin$}{}r;
+
+use autodie qw/ :all /;
+
+use JCC::Music::Player::Schema;
+
+use JCC::Music::Player::Rules qw/ update_db_from_file_system /;
+
+my $schema = JCC::Music::Player::Schema->connect("dbi:SQLite:dbname=$project_dir/data/priorities.db", '', '');
+
+update_db_from_file_system($schema, qq{$ENV{HOME}/Music}, verbose => 1);

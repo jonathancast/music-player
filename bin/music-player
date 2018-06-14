@@ -17,6 +17,8 @@ use autodie qw/ :all /;
 
 use JCC::Music::Player::Schema;
 
+use JCC::Music::Player::Rules qw/ update_db_from_file_system genres_to_use /;
+
 $|++;
 
 my $child_pid;
@@ -26,23 +28,8 @@ $SIG{TERM} = sub { kill_child(); exit 1; };
 
 my $schema = JCC::Music::Player::Schema->connect("dbi:SQLite:dbname=$project_dir/data/priorities.db", '', '');
 
-open my $fh, '-|', 'find', qq{$ENV{HOME}/Music};
-while (my $fn = <$fh>) {
-    chomp($fn);
-
-    if (-f $fn && ($fn =~ m{\.mp3$} || $fn =~ m{\.ogg$})) {
-        $schema->resultset('Track')->find_or_create(
-            { filename => $fn, score => 1, },
-            { key => 'filename', },
-        );
-    }
-}
-close $fh;
-
-my $rs = $schema->resultset('Track')->search();
-while (my $row = $rs->next()) {
-    $row->delete() unless -f $row->filename;
-}
+my $dir = qq{$ENV{HOME}/Music};
+update_db_from_file_system($schema, $dir);
 
 my $total_score = $schema->resultset('Track')->get_column('score')->sum();
 
@@ -51,11 +38,15 @@ ReadMode 3;
 track: while (1) {
     my $target = rand() * $total_score;
 
-    my $row = $schema->resultset('Track')->nth_row($target)->single();
+    my $row = $schema->resultset('Track')
+        ->search({ genre => { -in => [ genres_to_use ], }, })
+        ->nth_row($target)
+        ->single()
+    ;
 
     next unless $row;
 
-    print $row->filename, ' ';
+    printf "%s (%s) (%d) ", $row->filename =~ s{^\Q$dir/}{}r, $row->genre, $row->score * 100;
 
     $child_pid = play($row->filename);
 

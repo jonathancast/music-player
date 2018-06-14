@@ -1,10 +1,14 @@
 package JCC::Music::Player::Schema::Result::Track;
 
+use v5.12;
+use warnings;
+
 use DBIx::Class::Candy -autotable => v1, -perl5 => v12;
 
 primary_column id => { data_type => 'int', is_auto_increment => 1, };
 
 column filename => { data_type => 'text', };
+column genre => { data_type => 'text', };
 
 column score => { data_type => 'real', };
 

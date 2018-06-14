@@ -1,11 +1,12 @@
 DBIx::Class::Candy@0.005003
 DBIx::Class::Helpers@2.033004
 DBIx::Class@0.082841
+DateTime::Event::Sunrise@0.0505
 Exporter::Tiny@1.000000
 IPC::System::Simple@1.25
 Moops@0.034
+Music::Tag::MP3@0.4101
+Music::Tag::OGG@0.4101
 Music::Tag@0.4103
 SQL::Translator@0.11024
 Term::ReadKey@2.37
-Music::Tag::OGG@0.4101
-Music::Tag::MP3@0.4101
