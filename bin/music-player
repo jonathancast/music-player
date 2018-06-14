@@ -31,12 +31,10 @@ my $schema = JCC::Music::Player::Schema->connect("dbi:SQLite:dbname=$project_dir
 my $dir = qq{$ENV{HOME}/Music};
 update_db_from_file_system($schema, $dir);
 
-my $total_score = $schema->resultset('Track')->get_column('score')->sum();
-
 ReadMode 3;
 
 track: while (1) {
-    my $target = rand() * $total_score;
+    my $target = rand() * $schema->resultset('Track')->get_column('score')->sum();
 
     my $row = $schema->resultset('Track')
         ->search({ genre => { -in => [ genres_to_use ], }, })
