@@ -53,7 +53,7 @@ track: while (1) {
             if ($key eq 'j') {
                 kill_child();
                 $row->add_score(0);
-                print qq{\n};
+                printf qq{(%d)\n}, $row->score_pct;
                 next track;
             }
         }
@@ -63,7 +63,7 @@ track: while (1) {
 
     $row->add_score(1);
 
-    print qq{\n};
+    printf qq{(%d)\n}, $row->score_pct;
 }
 
 exit(0);
