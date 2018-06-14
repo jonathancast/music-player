@@ -22,6 +22,8 @@ has_many previous_tracks => 'JCC::Music::Player::Schema::Result::Track', sub {
     };
 };
 
+sub score_pct { shift->score * 100 }
+
 sub add_score {
     my ($self, $new_score) = @_;
 

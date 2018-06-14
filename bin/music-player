@@ -44,7 +44,7 @@ track: while (1) {
 
     next unless $row;
 
-    printf "%s (%s) (%d) ", $row->filename =~ s{^\Q$dir/}{}r, $row->genre, $row->score * 100;
+    printf "%s (%s) (%d) ", $row->filename =~ s{^\Q$dir/}{}r, $row->genre, $row->score_pct;
 
     $child_pid = play($row->filename);
 
