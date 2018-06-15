@@ -67,4 +67,11 @@ sub genres_to_use {
     return @genres;
 }
 
+sub thanksgiving_day {
+    my ($now) = @_;
+
+    my $end_of_nov = $now->clone()->set_day(30);
+    return $end_of_nov->clone()->add(days => -(($end_of_nov->wday - 4) % 7))->day;
+}
+
 1;
