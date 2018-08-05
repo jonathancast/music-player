@@ -11,6 +11,7 @@ column filename => { data_type => 'text', };
 column genre => { data_type => 'text', };
 
 column score => { data_type => 'real', };
+column num_plays => { data_type => 'int', };
 
 unique_constraint filename => [qw/ filename /];
 
@@ -27,9 +28,10 @@ sub score_pct { shift->score * 100 }
 sub add_score {
     my ($self, $new_score) = @_;
 
-    my $weight = 0.5;
-
-    $self->update({ score => $self->score * (1 - $weight) + $new_score * $weight, });
+    $self->update({
+        score => ($self->score * ($self->num_plays + 0.5) + $new_score) / ($self->num_plays + 0.5 + 1),
+        num_plays => $self->num_plays + 1,
+    });
 }
 
 1;
