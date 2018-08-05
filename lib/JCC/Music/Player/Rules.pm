@@ -45,7 +45,7 @@ sub genres_to_use {
 
     my ($lat, $long) = (32.826788, -97.24239);
     state $sun_local = DateTime::Event::Sunrise->new(latitude  => $lat, longitude => $long);
-    state $now = DateTime->now(time_zone => 'America/Chicago');
+    my $now = DateTime->now(time_zone => 'America/Chicago');
     my $only_christmas = $now->month == 12 && $now->day > (25 - 7) && $now->day <= 25;
     my $use_christmas =
         $now->month == 11 && $now->day > thanksgiving_day($now)
