@@ -8,8 +8,8 @@ class JCC::Music::Player::Schema::ResultSet::Track extends DBIx::Class::ResultSe
     __PACKAGE__->load_components('Helper::ResultSet::Me');
     __PACKAGE__->load_components('Helper::ResultSet::Shortcut');
 
-    method nth_row($target) {
-        $target += 0;
+    method nth_row {
+        my $target = rand() * $self->result_source->resultset->get_column('score')->sum();
 
         my ($prev_sql, @prev_params) = $self->correlate('previous_tracks')->get_column('score')->sum_rs()->as_query()->$*->@*;
 

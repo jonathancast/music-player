@@ -34,11 +34,9 @@ update_db_from_file_system($schema, $dir);
 ReadMode 3;
 
 track: while (1) {
-    my $target = rand() * $schema->resultset('Track')->get_column('score')->sum();
-
     my $row = $schema->resultset('Track')
-        ->search({ genre => { -in => [ genres_to_use ], }, })
-        ->nth_row($target)
+        ->search({ genre => { -in => [ genres_to_use() ], }, })
+        ->nth_row
         ->single()
     ;
 
