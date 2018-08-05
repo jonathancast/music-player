@@ -1,0 +1,22 @@
+#! /usr/bin/env perl
+
+use v5.12;
+use warnings;
+
+use FindBin;
+use local::lib $FindBin::Bin =~ s{/bin$}{/local-lib}r;
+use lib $FindBin::Bin =~ s{/bin$}{/lib}r;
+
+my $project_dir = $FindBin::Bin =~ s{/bin$}{}r;
+
+use IO::Select;
+use Term::ReadKey;
+
+use POSIX qw/ WNOHANG setsid /;
+use autodie qw/ :all /;
+
+use JCC::Music::Player::Rules qw/ genres_to_use /;
+
+use Data::Dumper;
+
+print Dumper([ genres_to_use(verbose => 1) ]);

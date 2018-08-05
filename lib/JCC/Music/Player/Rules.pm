@@ -40,6 +40,8 @@ sub update_db_from_file_system {
 }
 
 sub genres_to_use {
+    my (%options) = @_;
+
     my ($lat, $long) = (32.826788, -97.24239);
     state $sun_local = DateTime::Event::Sunrise->new(latitude  => $lat, longitude => $long);
     state $now = DateTime->now(time_zone => 'America/Chicago');
@@ -52,6 +54,10 @@ sub genres_to_use {
         $now->wday == 5 && $now > $sun_local->sunset_datetime($now)->subtract(hours => 1)
         || $now->wday == 6 && $now < $sun_local->sunset_datetime($now)->add(hours => 1)
     ;
+    if ($options{verbose}) {
+        printf STDERR "Month: %d; day: %d; dow: %d, Thanksgiving: %s; Sunset: %s\n", $now->month, $now->day, $now->wday, ($now->month == 11 ? thanksgiving_day($now) : ''), ($now->wday == 5 || $now->wday == 6 ? $sun_local->sunset_datetime($now) : '');
+        printf STDERR "Only Christmas: %s; Use Christmas: %s; Use Sabbath: %s\n", ($only_christmas ? "Yes" : "No"), ($use_christmas ? "Yes" : "No"), ($use_sabbath ? "Yes" : "No");
+    }
     my @secular_genres = ('Country', 'Rock & Roll');
     my @religious_genres = ('Christian', 'Gospel', 'Southern Gospel');
     my @christmas_genres = ('Christmas Songs', 'Winter');
