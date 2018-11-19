@@ -8,8 +8,11 @@ use Exporter qw/ import /;
 use DateTime;
 use DateTime::Event::Sunrise;
 use Music::Tag;
+use JSON::XS qw/ decode_json /;
 
 push our @EXPORT_OK, qw/ genres_to_use update_db_from_file_system /;
+
+use constant LOCATION => decode_json scalar qx{curl -s https://freegeoip.app/json/};
 
 sub update_db_from_file_system {
     my ($schema, $music_path, %options) = @_;
@@ -43,9 +46,8 @@ sub update_db_from_file_system {
 sub genres_to_use {
     my (%options) = @_;
 
-    my ($lat, $long) = (32.826788, -97.24239);
-    state $sun_local = DateTime::Event::Sunrise->new(latitude  => $lat, longitude => $long);
-    my $now = DateTime->now(time_zone => 'America/Chicago');
+    state $sun_local = DateTime::Event::Sunrise->new(latitude  => LOCATION->{latitude}, longitude => LOCATION->{longitude});
+    my $now = DateTime->now(time_zone => LOCATION->{time_zone});
     my $only_christmas = $now->month == 12 && $now->day > (25 - 7) && $now->day <= 25;
     my $use_christmas =
         $now->month == 11 && $now->day > thanksgiving_day($now)

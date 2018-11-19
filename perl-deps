@@ -10,3 +10,5 @@ Music::Tag::OGG@0.4101
 Music::Tag@0.4103
 SQL::Translator@0.11024
 Term::ReadKey@2.37
+List::AllUtils@0.14
+JSON::XS@3.04
