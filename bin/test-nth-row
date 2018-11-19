@@ -1,0 +1,38 @@
+#! /usr/bin/env perl
+
+use v5.12;
+use warnings;
+
+use FindBin;
+use local::lib $FindBin::Bin =~ s{/bin$}{/local-lib}r;
+use lib $FindBin::Bin =~ s{/bin$}{/lib}r;
+
+use List::AllUtils qw/ sum /;
+
+use JCC::Music::Player::Schema;
+
+my $project_dir = $FindBin::Bin =~ s{/bin$}{}r;
+
+my $schema = JCC::Music::Player::Schema->connect("dbi:SQLite:dbname=$project_dir/data/priorities.db", '', '');
+
+my (%scores_in_db, %scores_in_trial);
+
+my $rs = $schema->resultset('Track');
+
+while (my $row = $rs->next()) {
+    my $score = int($row->score * 100 + 0.5);
+    $scores_in_db{$score}++;
+}
+
+for (1..100) {
+    my $row = $schema->resultset('Track')->nth_row->single();
+    my $score = int($row->score * 100 + 0.5);
+    $scores_in_trial{$score}++;
+}
+
+my $tracks_in_db = sum(values %scores_in_db);
+my $tracks_in_trial = sum(values %scores_in_trial);
+
+for my $score (sort { $a <=> $b } keys %scores_in_trial) {
+    printf("%02d: %02.2f%% in trial (%02.2f%% in DB)\n", $score, $scores_in_trial{$score} / $tracks_in_trial * 100, $scores_in_db{$score} / $tracks_in_db * 100);
+}
