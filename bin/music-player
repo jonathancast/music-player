@@ -52,7 +52,7 @@ track: while (1) {
 
     while (!waitpid($child_pid, WNOHANG)) {
         if (defined(my $key = ReadKey(1))) {
-            if ($key eq 'j') {
+            if ($key eq 'n') {
                 kill_child();
                 $row->add_score(0);
                 printf qq{(%d)\n}, $row->score_pct;
