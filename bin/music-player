@@ -57,6 +57,18 @@ track: while (1) {
                 $row->add_score(0);
                 printf qq{(%d)\n}, $row->score_pct;
                 next track;
+            } elsif ($key eq '/') {
+                kill_child();
+                printf qq{\n};
+                ReadMode 0;
+                print q{/ };
+                chomp(my $nm = <>);
+                push @queue, available_tracks
+                    ->search({ filename => { -like => "%$nm%", } })
+                    ->all()
+                ;
+                ReadMode 3;
+                next track;
             }
         }
     }
