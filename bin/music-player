@@ -38,10 +38,13 @@ sub available_tracks {
         ->search({ genre => { -in => [ genres_to_use() ], }, })
 }
 
-track: while (1) {
-    my $row = available_tracks->nth_row->single();
+my @queue;
 
-    next unless $row;
+track: while (1) {
+    while (!@queue) {
+        @queue = available_tracks->nth_row->all();
+    }
+    my $row = shift @queue;
 
     printf "%s (%s) (%d) ", $row->filename =~ s{^\Q$dir/}{}r, $row->genre, $row->score_pct;
 
