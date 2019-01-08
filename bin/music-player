@@ -33,9 +33,12 @@ update_db_from_file_system($schema, $dir);
 
 ReadMode 3;
 
+my $min_score = 50;
+
 sub available_tracks {
     $schema->resultset('Track')
         ->search({ genre => { -in => [ genres_to_use() ], }, })
+        ->search({ score => { '>=' => $min_score / 100, }, })
 }
 
 my @queue;
@@ -57,6 +60,18 @@ track: while (1) {
                 $row->add_score(0);
                 printf qq{(%d)\n}, $row->score_pct;
                 next track;
+            } elsif ($key eq '+') {
+                $min_score += 10;
+                printf qq{(min %d) }, $min_score;
+                if ($row->score_pct < $min_score) {
+                    kill_child();
+                    $row->add_score(0);
+                    printf qq{(%d)\n}, $row->score_pct;
+                    next track;
+                }
+            } elsif ($key eq '-') {
+                $min_score -= 10;
+                printf qq{ (min %d) }, $min_score;
             } elsif ($key eq '/') {
                 kill_child();
                 printf qq{\n};
