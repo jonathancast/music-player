@@ -14,12 +14,15 @@ use Term::ReadKey;
 
 use POSIX qw/ WNOHANG setsid /;
 use autodie qw/ :all /;
+use List::AllUtils qw/ any /;
 
 use JCC::Music::Player::Schema;
 
 use JCC::Music::Player::Rules qw/ update_db_from_file_system genres_to_use /;
 
 $|++;
+
+my $dry_run = any { $_ eq '-n' } @ARGV;
 
 my $child_pid;
 
@@ -90,12 +93,14 @@ track: while (1) {
 
     undef $child_pid;
 
+    if ($dry_run) { printf qq{\n}; next; }
+
     $row->add_score(1);
 
     printf qq{(%d)\n}, $row->score_pct;
 }
 
-exit(0);
+exit 0;
 
 sub play {
     my ($fn) = @_;
@@ -107,6 +112,7 @@ sub play {
         open STDIN, '<', '/dev/null';
         open STDOUT, '>', '/dev/null';
         open STDIN, '>&', \*STDOUT;
+        exit 0 if $dry_run;
         if ($fn =~ m{\.ogg$}) {
             exec 'ogg123', '-q', $fn;
         } elsif ($fn =~ m{\.mp3$}) {
