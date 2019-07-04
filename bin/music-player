@@ -36,45 +36,62 @@ update_db_from_file_system($schema, $dir);
 
 ReadMode 3;
 
-my $min_score = 50;
+my $tolerance = 0;
 
 sub available_tracks {
     $schema->resultset('Track')
         ->search({ genre => { -in => [ genres_to_use() ], }, })
-        ->search({ score => { '>=' => $min_score / 100, }, })
 }
 
 my @queue;
 
+my $hist_length = 10;
+my $good_threshold = 90;
+
+my @hist;
+
+sub good_songs() { scalar(grep { $_->score_pct >= $good_threshold } @hist) }
+
 track: while (1) {
+    # make room in @hist for new track
+    shift @hist while @hist > $hist_length - 1;
+
+    # get new track
     while (!@queue) {
-        @queue = available_tracks->nth_row->all();
+        my $rs = available_tracks;
+        # only select good songs until we have 'enough' in history
+        $rs = $rs->search({ score => { '>=' => $good_threshold / 100, }, }) if good_songs < $hist_length - $tolerance;
+        @queue = $rs->nth_row->all();
     }
     my $row = shift @queue;
+    push @hist, $row;
 
     printf "%s (%s) (%d) ", $row->filename =~ s{^\Q$dir/}{}r, $row->genre, $row->score_pct;
 
     $child_pid = play($row->filename);
 
-    while (!waitpid($child_pid, WNOHANG)) {
+    key: while (!waitpid($child_pid, WNOHANG)) {
         if (defined(my $key = ReadKey(1))) {
-            if ($key eq 'n') {
+            if ($key eq 'y') {
+		$row->add_score(1);
+		printf qq{(%d) }, $row->score_pct;
+            } elsif ($key eq 'n') {
                 kill_child();
                 $row->add_score(0);
                 printf qq{(%d)\n}, $row->score_pct;
                 next track;
             } elsif ($key eq '+') {
-                $min_score += 10;
-                printf qq{(min %d) }, $min_score;
-                if ($row->score_pct < $min_score) {
-                    kill_child();
-                    $row->add_score(0);
-                    printf qq{(%d)\n}, $row->score_pct;
-                    next track;
-                }
+                next key if $tolerance >= $hist_length;
+                $tolerance++;
+                printf qq{(tol %d) }, $tolerance;
             } elsif ($key eq '-') {
-                $min_score -= 10;
-                printf qq{ (min %d) }, $min_score;
+                next key if $tolerance <= 0;
+                $tolerance--;
+                printf qq{ (tol %d) }, $tolerance;
+                kill_child();
+                $row->add_score(0);
+                printf qq{(%d)\n}, $row->score_pct;
+                next track;
             } elsif ($key eq '/') {
                 kill_child();
                 printf qq{\n};
