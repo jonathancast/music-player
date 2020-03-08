@@ -1,0 +1,110 @@
+#! /usr/bin/env perl
+
+use v5.12;
+use warnings;
+
+use FindBin;
+use local::lib $FindBin::Bin =~ s{/bin$}{/local-lib}r;
+use lib $FindBin::Bin =~ s{/bin$}{/lib}r;
+
+my $project_dir = $FindBin::Bin =~ s{/bin$}{}r;
+
+use IO::Select;
+use Term::ReadKey;
+
+use POSIX qw/ WNOHANG setsid /;
+use autodie qw/ :all /;
+use List::AllUtils qw/ any /;
+
+use JCC::Music::Player::Schema;
+
+use JCC::Music::Player::Rules qw/ update_db_from_file_system genres_to_use /;
+
+$|++;
+
+my $schema = JCC::Music::Player::Schema->connect("dbi:SQLite:dbname=$project_dir/data/priorities.db", '', '');
+
+my $dir = qq{$ENV{HOME}/Music};
+update_db_from_file_system($schema, $dir);
+
+ReadMode 'raw';
+
+my $tolerance = 0;
+
+sub available_tracks {
+    $schema->resultset('Track')
+        ->search({ genre => { -in => [ genres_to_use() ], }, })
+}
+
+my @queue;
+
+my $hist_length = 10;
+my $good_threshold = 90;
+
+my @hist;
+
+sub good_songs() { scalar(grep { $_->score_pct >= $good_threshold } @hist) }
+
+track: while (1) {
+    # make room in @hist for new track
+    shift @hist while @hist > $hist_length - 1;
+
+    # get new track
+    while (!@queue) {
+        my $rs = available_tracks;
+        # only select good songs until we have 'enough' in history
+        $rs = $rs->search({ score => { '>=' => $good_threshold / 100, }, }) if good_songs < $hist_length - $tolerance;
+        @queue = $rs->nth_row->all();
+    }
+    my $row = shift @queue;
+    push @hist, $row;
+
+    printf "%s (%s) (%d)? ", $row->filename =~ s{^\Q$dir/}{}r, $row->genre, $row->score_pct;
+
+    key:
+    if (defined(my $key = ReadKey(0))) {
+        if ($key eq 'y') {
+            $row->add_score(1);
+            printf qq{(%d)\n}, $row->score_pct;
+            system qw/ enq -c music /, $row->filename;
+            next track;
+        } elsif ($key eq 'n') {
+            $row->add_score(0);
+            printf qq{(%d)\n}, $row->score_pct;
+            next track;
+        } elsif ($key eq '+') {
+            next key if $tolerance >= $hist_length;
+            $tolerance++;
+            printf qq{(tol %d) }, $tolerance;
+            goto key;
+        } elsif ($key eq '-') {
+            goto key if $tolerance <= 0;
+            $tolerance--;
+            printf qq{ (tol %d) }, $tolerance;
+            $row->add_score(0);
+            printf qq{(%d)\n}, $row->score_pct;
+            next track;
+        } elsif ($key eq '/') {
+            print qq{\n};
+            ReadMode 0;
+            print q{/ };
+            chomp(my $nm = <>);
+            push @queue, available_tracks
+                ->search({ filename => { -like => "%$nm%", } })
+                ->all()
+            ;
+            ReadMode 3;
+            next track;
+        } elsif ($key eq 'q') {
+            printf qq{\n};
+            exit 0;
+        } else {
+            printf qq{Unknown key %s; ? }, $key;
+            goto key;
+        }
+    }
+}
+
+exit 0;
+
+END { ReadMode 0; print qq{\n}; }
