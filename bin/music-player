@@ -1,0 +1,18 @@
+#! /usr/bin/env perl
+
+use v5.12;
+use warnings;
+
+use FindBin;
+use local::lib $FindBin::Bin =~ s{/bin$}{/local-lib}r;
+use lib $FindBin::Bin =~ s{/bin$}{/lib}r;
+
+my $project_dir = $FindBin::Bin =~ s{/bin$}{}r;
+
+use autodie qw/ :all /;
+
+use JCC::Music::Player::Rules qw/ category /;
+
+while (1) {
+    system 'deq', '-c', category;
+}
