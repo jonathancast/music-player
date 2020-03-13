@@ -18,7 +18,7 @@ use List::AllUtils qw/ any /;
 
 use JCC::Music::Player::Schema;
 
-use JCC::Music::Player::Rules qw/ update_db_from_file_system genres_to_use /;
+use JCC::Music::Player::Rules qw/ update_db_from_file_system category genres_to_use /;
 
 $|++;
 
@@ -31,9 +31,11 @@ ReadMode 'raw';
 
 my $tolerance = 0;
 
-sub available_tracks {
+my $category;
+
+sub available_tracks() {
     $schema->resultset('Track')
-        ->search({ genre => { -in => [ genres_to_use() ], }, })
+        ->search({ genre => { -in => [ genres_to_use($category) ], }, })
 }
 
 my @queue;
@@ -48,6 +50,8 @@ sub good_songs() { scalar(grep { $_->score_pct >= $good_threshold } @hist) }
 track: while (1) {
     # make room in @hist for new track
     shift @hist while @hist > $hist_length - 1;
+
+    $category = category;
 
     # get new track
     while (!@queue) {
@@ -66,7 +70,7 @@ track: while (1) {
         if ($key eq 'y') {
             $row->add_score(1);
             printf qq{(%d)\n}, $row->score_pct;
-            system qw/ enq -c music /, $row->filename;
+            system 'enq', '-c', $category, $row->filename;
             next track;
         } elsif ($key eq 'n') {
             $row->add_score(0);

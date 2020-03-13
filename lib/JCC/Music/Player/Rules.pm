@@ -10,7 +10,7 @@ use DateTime::Event::Sunrise;
 use Music::Tag;
 use JSON::XS qw/ decode_json /;
 
-push our @EXPORT_OK, qw/ genres_to_use update_db_from_file_system /;
+push our @EXPORT_OK, qw/ category genres_to_use update_db_from_file_system /;
 
 use constant LOCATION => decode_json scalar qx{curl -s https://freegeoip.app/json/};
 
@@ -43,7 +43,7 @@ sub update_db_from_file_system {
     }
 }
 
-sub genres_to_use {
+sub category {
     my (%options) = @_;
 
     state $sun_local = DateTime::Event::Sunrise->new(latitude  => LOCATION->{latitude}, longitude => LOCATION->{longitude});
@@ -61,19 +61,35 @@ sub genres_to_use {
         printf STDERR "Month: %d; day: %d; dow: %d, Thanksgiving: %s; Sunset: %s\n", $now->month, $now->day, $now->wday, ($now->month == 11 ? thanksgiving_day($now) : ''), ($now->wday == 5 || $now->wday == 6 ? $sun_local->sunset_datetime($now) : '');
         printf STDERR "Only Christmas: %s; Use Christmas: %s; Use Sabbath: %s\n", ($only_christmas ? "Yes" : "No"), ($use_christmas ? "Yes" : "No"), ($use_sabbath ? "Yes" : "No");
     }
+
+    return $use_sabbath && $only_christmas ? 'sabbath-only-christmas-music'
+        : $use_sabbath && $use_christmas ? 'sabbath-christmas-music'
+        : $use_sabbath ? 'sabbath-music'
+        : $only_christmas ? 'only-christmas-music'
+        : $use_christmas ? 'christmas-music'
+        : 'music'
+    ;
+}
+
+sub genres_to_use {
+    my ($category) = @_;
+
     my @secular_genres = ('Country', 'Rock & Roll');
     my @religious_genres = ('Christian', 'Gospel', 'Southern Gospel');
     my @christmas_genres = ('Christmas Songs', 'Winter');
     my @christmas_religious_genres = ('Christmas Carols');
     my @genres;
-    if ($use_sabbath && $only_christmas) { @genres = (@christmas_religious_genres); }
-    elsif ($use_sabbath && $use_christmas) { @genres = (@religious_genres, @christmas_religious_genres); }
-    elsif ($use_sabbath) { @genres = (@religious_genres); }
-    elsif ($only_christmas) { @genres = (@christmas_genres, @christmas_religious_genres); }
-    elsif ($use_christmas) { @genres = (@secular_genres, @religious_genres, @christmas_genres, @christmas_religious_genres); }
-    else { @genres = (@secular_genres, @religious_genres) }
 
-    return @genres;
+    return
+        {
+            'sabbath-only-christmas-music' => [@christmas_religious_genres],
+            'sabbath-christmas-music' => [@religious_genres, @christmas_religious_genres],
+            'sabbath-music' => [@religious_genres],
+            'only-christmas-music' => [@christmas_genres, @christmas_religious_genres],
+            'christmas-music' => [@secular_genres, @religious_genres, @christmas_genres, @christmas_religious_genres],
+            'music' => [@secular_genres, @religious_genres],
+        }->{$category}->@*
+    ;
 }
 
 sub thanksgiving_day {
