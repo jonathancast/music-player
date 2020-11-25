@@ -70,7 +70,7 @@ track: while (1) {
         if ($key eq 'y') {
             $row->add_score(1);
             printf qq{(%d)\n}, $row->score_pct;
-            system 'enq', '-c', $category, $row->filename;
+            system 'enq', '-a', '-c', $category, $row->filename;
             next track;
         } elsif ($key eq 'n') {
             $row->add_score(0);
