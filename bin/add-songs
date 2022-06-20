@@ -83,6 +83,9 @@ track: while (1) {
             $row->add_score(0);
             printf qq{(%d)\n}, $row->score_pct;
             next track;
+        } elsif ($key eq 'w') {
+            print qq{\n};
+            next track;
         } elsif ($key eq '+') {
             next key if $tolerance >= hist_length;
             $tolerance++;
