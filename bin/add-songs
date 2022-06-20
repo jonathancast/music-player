@@ -69,6 +69,7 @@ track: while (1) {
     my $row = shift @queue;
     push @hist, $row;
 
+    prompt:
     printf "%s (%s) (%d)? ", $row->filename =~ s{^\Q$dir/}{}r, $row->genre, $row->score_pct;
 
     key:
@@ -105,6 +106,9 @@ track: while (1) {
             ;
             ReadMode 3;
             next track;
+	} elsif ($key eq "\n") {
+	    printf qq{\n\n};
+	    goto prompt;
         } elsif ($key eq 'q') {
             printf qq{\n};
             exit 0;
