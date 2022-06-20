@@ -15,4 +15,5 @@ use JCC::Music::Player::Rules qw/ category /;
 
 while (1) {
     system 'deq', '-c', category;
+    if (!qx{q -c @{[ category ]}}) { sleep(1); }
 }
