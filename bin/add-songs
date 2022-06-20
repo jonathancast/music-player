@@ -40,16 +40,16 @@ sub available_tracks() {
 
 my @queue;
 
-my $hist_length = 10;
-my $good_threshold = 90;
+sub hist_length() { 10 }
+sub good_threshold() { 90 }
 
 my @hist;
 
-sub good_songs() { scalar(grep { $_->score_pct >= $good_threshold } @hist) }
+sub good_songs() { scalar(grep { $_->score_pct >= good_threshold } @hist) }
 
 track: while (1) {
     # make room in @hist for new track
-    shift @hist while @hist > $hist_length - 1;
+    shift @hist while @hist > hist_length - 1;
 
     $category = category;
 
@@ -57,7 +57,7 @@ track: while (1) {
     while (!@queue) {
         my $rs = available_tracks;
         # only select good songs until we have 'enough' in history
-        $rs = $rs->search({ score => { '>=' => $good_threshold / 100, }, }) if good_songs < $hist_length - $tolerance;
+        $rs = $rs->search({ score => { '>=' => good_threshold / 100, }, }) if good_songs < hist_length - $tolerance;
         @queue = $rs->nth_row->all();
     }
     my $row = shift @queue;
@@ -77,7 +77,7 @@ track: while (1) {
             printf qq{(%d)\n}, $row->score_pct;
             next track;
         } elsif ($key eq '+') {
-            next key if $tolerance >= $hist_length;
+            next key if $tolerance >= hist_length;
             $tolerance++;
             printf qq{(tol %d) }, $tolerance;
             goto key;
