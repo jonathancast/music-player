@@ -47,11 +47,17 @@ my @hist;
 
 sub good_songs() { scalar(grep { $_->score_pct >= good_threshold } @hist) }
 
+sub num_songs() { scalar(@{[ qx{q -c $category} ]}) }
+
+sub page_length() { 20 }
+
 track: while (1) {
     # make room in @hist for new track
     shift @hist while @hist > hist_length - 1;
 
     $category = category;
+
+    while (num_songs >= page_length) { sleep(1); }
 
     # get new track
     while (!@queue) {
