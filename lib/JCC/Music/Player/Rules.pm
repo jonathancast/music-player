@@ -5,14 +5,29 @@ use warnings;
 
 use Exporter qw/ import /;
 
+use Try::Tiny;
+
 use DateTime;
 use DateTime::Event::Sunrise;
 use Music::Tag;
-use JSON::XS qw/ decode_json /;
 
-push our @EXPORT_OK, qw/ category genres_to_use update_db_from_file_system /;
+use File::Slurp qw/ read_file write_file /;
+use JSON::XS qw/ decode_json encode_json /;
 
-use constant LOCATION => decode_json scalar qx{curl -s https://freegeoip.app/json/};
+push our @EXPORT_OK, qw/ category is_sabbath genres_to_use update_db_from_file_system /;
+
+use constant lat_long_file => qq{$ENV{HOME}/lat-long};
+
+my $lat_long;
+BEGIN {
+    $lat_long = try { decode_json scalar read_file(lat_long_file) }
+        || { latitude => 33.038334, longitude => -97.006111, time_zone => 'America/Chicago', }
+    ;
+    write_file(lat_long_file, encode_json($lat_long));
+}
+use constant LOCATION => $lat_long;
+
+sub is_sabbath();
 
 sub update_db_from_file_system {
     my ($schema, $music_path, %options) = @_;
@@ -43,31 +58,37 @@ sub update_db_from_file_system {
     }
 }
 
+
+state $sun_local = DateTime::Event::Sunrise->new(latitude  => LOCATION->{latitude}, longitude => LOCATION->{longitude});
+
 sub category {
     my (%options) = @_;
 
-    state $sun_local = DateTime::Event::Sunrise->new(latitude  => LOCATION->{latitude}, longitude => LOCATION->{longitude});
     my $now = DateTime->now(time_zone => LOCATION->{time_zone});
     my $only_christmas = $now->month == 12 && $now->day > (25 - 7) && $now->day <= 25;
     my $use_christmas =
         $now->month == 11 && $now->day > thanksgiving_day($now)
         || $now->month == 12
     ;
-    my $use_sabbath =
-        $now->wday == 5 && $now > $sun_local->sunset_datetime($now)->subtract(hours => 1)
-        || $now->wday == 6 && $now < $sun_local->sunset_datetime($now)->add(hours => 1)
-    ;
     if ($options{verbose}) {
         printf STDERR "Month: %d; day: %d; dow: %d, Thanksgiving: %s; Sunset: %s\n", $now->month, $now->day, $now->wday, ($now->month == 11 ? thanksgiving_day($now) : ''), ($now->wday == 5 || $now->wday == 6 ? $sun_local->sunset_datetime($now) : '');
-        printf STDERR "Only Christmas: %s; Use Christmas: %s; Use Sabbath: %s\n", ($only_christmas ? "Yes" : "No"), ($use_christmas ? "Yes" : "No"), ($use_sabbath ? "Yes" : "No");
+        printf STDERR "Only Christmas: %s; Use Christmas: %s; Use Sabbath: %s\n", ($only_christmas ? "Yes" : "No"), ($use_christmas ? "Yes" : "No"), (is_sabbath ? "Yes" : "No");
     }
 
-    return $use_sabbath && $only_christmas ? 'sabbath-only-christmas-music'
-        : $use_sabbath && $use_christmas ? 'sabbath-christmas-music'
-        : $use_sabbath ? 'sabbath-music'
+    return is_sabbath && $only_christmas ? 'sabbath-only-christmas-music'
+        : is_sabbath && $use_christmas ? 'sabbath-christmas-music'
+        : is_sabbath ? 'sabbath-music'
         : $only_christmas ? 'only-christmas-music'
         : $use_christmas ? 'christmas-music'
         : 'music'
+    ;
+}
+
+sub is_sabbath() {
+    my $now = DateTime->now(time_zone => LOCATION->{time_zone});
+    return
+        $now->wday == 5 && $now > $sun_local->sunset_datetime($now)->subtract(hours => 1)
+        || $now->wday == 6 && $now < $sun_local->sunset_datetime($now)->add(hours => 1)
     ;
 }
 

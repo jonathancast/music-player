@@ -18,7 +18,7 @@ use List::AllUtils qw/ any /;
 
 use JCC::Music::Player::Schema;
 
-use JCC::Music::Player::Rules qw/ update_db_from_file_system category genres_to_use /;
+use JCC::Music::Player::Rules qw/ update_db_from_file_system category is_sabbath genres_to_use /;
 
 $|++;
 
@@ -27,7 +27,7 @@ my $schema = JCC::Music::Player::Schema->connect("dbi:SQLite:dbname=$project_dir
 my $dir = qq{$ENV{HOME}/Music};
 update_db_from_file_system($schema, $dir);
 
-ReadMode 'raw';
+ReadMode 'cbreak';
 
 my $tolerance = 0;
 
@@ -57,17 +57,31 @@ track: while (1) {
 
     $category = category;
 
-    while (num_songs >= page_length) { sleep(1); }
+    while (num_songs >= page_length) {
+        if (defined(my $key = ReadKey(-1))) {
+            if ($key eq 'q') {
+                exit 0;
+            }
+        }
+        sleep(1);
+    }
 
     # get new track
     while (!@queue) {
         my $rs = available_tracks;
         # only select good songs until we have 'enough' in history
-        $rs = $rs->search({ score => { '>=' => good_threshold / 100, }, }) if good_songs < hist_length - $tolerance;
+        $rs = $rs->search({ score => { '>=' => good_threshold / 100, }, }) if !is_sabbath && good_songs < hist_length - $tolerance;
         @queue = $rs->nth_row->all();
     }
     my $row = shift @queue;
     push @hist, $row;
+
+    if (is_sabbath) {
+        $row->add_score(1);
+        printf qq{%s (%d)\n}, $row->filename, $row->score_pct;
+        system 'enq', '-a', '-c', $category, $row->filename;
+        next track;
+    }
 
     prompt:
     printf "%s (%s) (%d)? ", $row->filename =~ s{^\Q$dir/}{}r, $row->genre, $row->score_pct;
@@ -100,14 +114,14 @@ track: while (1) {
             next track;
         } elsif ($key eq '/') {
             print qq{\n};
-            ReadMode 0;
+            ReadMode 'normal';
             print q{/ };
             chomp(my $nm = <>);
             push @queue, available_tracks
                 ->search({ filename => { -like => "%$nm%", } })
                 ->all()
             ;
-            ReadMode 3;
+            ReadMode 'cbreak';
             next track;
 	} elsif ($key eq "\n") {
 	    printf qq{\n\n};
@@ -124,4 +138,4 @@ track: while (1) {
 
 exit 0;
 
-END { ReadMode 0; print qq{\n}; }
+END { ReadMode 'restore'; print qq{\n}; }

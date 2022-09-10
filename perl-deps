@@ -12,3 +12,5 @@ SQL::Translator@0.11024
 Term::ReadKey@2.37
 List::AllUtils@0.14
 JSON::XS@3.04
+Try::Tiny@0.31
+File::Slurp@9999.32
