@@ -76,8 +76,7 @@ track: while (1) {
     my $row = shift @queue;
     push @hist, $row;
 
-    if (is_sabbath) {
-        $row->add_score(1);
+    if (is_sabbath && $row->score >= good_threshold / 100) {
         printf qq{%s (%d)\n}, $row->filename, $row->score_pct;
         system 'enq', '-a', '-c', $category, $row->filename;
         next track;
