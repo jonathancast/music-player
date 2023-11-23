@@ -18,15 +18,8 @@ class JCC::Music::Player::Schema::ResultSet::Track extends DBIx::Class::ResultSe
     }
 
     method nth_row {
-        my $target = rand() * $self->result_source->resultset->get_column('score')->sum();
-
-        my ($prev_sql, @prev_params) = $self->correlate('previous_tracks')->get_column('score')->sum_rs()->as_query()->$*->@*;
-
         return $self
-            ->search({ -and => [
-                \[ qq{$prev_sql <= $target}, @prev_params, ],
-                \[ qq{$target <= $prev_sql + @{[ $self->me.'score' ]}}, @prev_params, ],
-            ], })
+            ->order_by(\q{random()})
             ->limit(1)
         ;
     }

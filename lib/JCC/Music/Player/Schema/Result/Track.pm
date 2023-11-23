@@ -15,14 +15,6 @@ column num_plays => { data_type => 'int', };
 
 unique_constraint filename => [qw/ filename /];
 
-has_many previous_tracks => 'JCC::Music::Player::Schema::Result::Track', sub {
-    my $args = shift;
-
-    return {
-        "$args->{foreign_alias}.id" => { '<' => { -ident => "$args->{self_alias}.id" }, },
-    };
-};
-
 sub score_pct { shift->score * 100 }
 
 sub add_score {
