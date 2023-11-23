@@ -10,10 +10,10 @@ class JCC::Music::Player::Schema::ResultSet::Track extends DBIx::Class::ResultSe
     __PACKAGE__->load_components('Helper::ResultSet::Me');
     __PACKAGE__->load_components('Helper::ResultSet::Shortcut');
 
-    method apply_threshold($threshold) {
+    method apply_threshold($lower_threshold, $threshold) {
         $self->search(\[
             qq{case when genre in (@{[ join(',', map { '?' } good_genres) ]}) then @{[ $self->me('score') ]} >= ? else score >= ? end},
-            good_genres, $threshold / 100 / 2, $threshold / 100,
+            good_genres, $lower_threshold / 100, $threshold / 100,
         ])
     }
 

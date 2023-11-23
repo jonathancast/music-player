@@ -69,10 +69,12 @@ track: while (1) {
     # get new track
     while (!@queue) {
         my $rs = available_tracks;
-        my $threshold = good_threshold;
         # prefer 'good' songs
+        my $threshold = good_threshold;
         $threshold -= 10 while $threshold > 0 && rand() * 10 < $tolerance;
-        $rs = $rs->apply_threshold($threshold);
+        my $lower_threshold = $threshold;
+        $lower_threshold -= 10 while $lower_threshold > 0 && rand() * 10 < 5;
+        $rs = $rs->apply_threshold($lower_threshold, $threshold);
         @queue = $rs->nth_row->all();
     }
     my $row = shift @queue;
