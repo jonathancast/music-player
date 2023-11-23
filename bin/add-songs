@@ -18,7 +18,7 @@ use List::AllUtils qw/ any /;
 
 use JCC::Music::Player::Schema;
 
-use JCC::Music::Player::Rules qw/ update_db_from_file_system category is_sabbath genres_to_use /;
+use JCC::Music::Player::Rules qw/ update_db_from_file_system category is_sabbath genres_to_use good_genres /;
 
 $|++;
 
@@ -69,8 +69,10 @@ track: while (1) {
     # get new track
     while (!@queue) {
         my $rs = available_tracks;
-        # only select good songs until we have 'enough' in history
-        $rs = $rs->search({ score => { '>=' => good_threshold / 100, }, }) if !is_sabbath && good_songs < hist_length - $tolerance;
+        my $threshold = good_threshold;
+        # prefer 'good' songs
+        $threshold -= 10 while $threshold > 0 && rand() * 10 < $tolerance;
+        $rs = $rs->search([ { score => { '>=' => $threshold / 100, }, }, { genre => { -in => [ good_genres ], } }, ]);
         @queue = $rs->nth_row->all();
     }
     my $row = shift @queue;

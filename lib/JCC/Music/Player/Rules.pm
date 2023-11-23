@@ -14,7 +14,7 @@ use Music::Tag;
 use File::Slurp qw/ read_file write_file /;
 use JSON::XS qw/ decode_json encode_json /;
 
-push our @EXPORT_OK, qw/ category is_sabbath genres_to_use update_db_from_file_system /;
+push our @EXPORT_OK, qw/ category is_sabbath genres_to_use good_genres update_db_from_file_system /;
 
 use constant lat_long_file => qq{$ENV{HOME}/lat-long};
 
@@ -28,6 +28,7 @@ BEGIN {
 use constant LOCATION => $lat_long;
 
 sub is_sabbath();
+sub good_genres();
 
 sub update_db_from_file_system {
     my ($schema, $music_path, %options) = @_;
@@ -92,14 +93,13 @@ sub is_sabbath() {
     ;
 }
 
+my @secular_genres = ('Country', 'Rock & Roll');
+my @religious_genres = ('Christian', 'Gospel', 'Southern Gospel');
+my @christmas_genres = ('Christmas Songs', 'Winter');
+my @christmas_religious_genres = ('Christmas Carols');
+
 sub genres_to_use {
     my ($category) = @_;
-
-    my @secular_genres = ('Country', 'Rock & Roll');
-    my @religious_genres = ('Christian', 'Gospel', 'Southern Gospel');
-    my @christmas_genres = ('Christmas Songs', 'Winter');
-    my @christmas_religious_genres = ('Christmas Carols');
-    my @genres;
 
     return
         {
@@ -112,6 +112,8 @@ sub genres_to_use {
         }->{$category}->@*
     ;
 }
+
+sub good_genres() { @religious_genres, @christmas_genres, @christmas_religious_genres }
 
 sub thanksgiving_day {
     my ($now) = @_;
