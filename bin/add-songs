@@ -64,6 +64,7 @@ track: while (1) {
             }
         }
         sleep(1);
+        $category = category;
     }
 
     # get new track
