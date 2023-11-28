@@ -14,7 +14,7 @@ use Music::Tag;
 use File::Slurp qw/ read_file write_file /;
 use JSON::XS qw/ decode_json encode_json /;
 
-push our @EXPORT_OK, qw/ category is_sabbath genres_to_use good_genres update_db_from_file_system /;
+push our @EXPORT_OK, qw/ category is_sabbath genres_to_use good_genres update_db_from_file_system enforce_christmas christmas_genres /;
 
 use constant lat_long_file => qq{$ENV{HOME}/lat-long};
 
@@ -85,6 +85,23 @@ sub category {
     ;
 }
 
+sub enforce_christmas {
+    my $now = DateTime->now(time_zone => LOCATION->{time_zone});
+
+    if ($now->month == 11 && $now->day > thanksgiving_day($now)) {
+        my $days_until_christmas = 25 + 30 - $now->day;
+        return rand() * 30 > $days_until_christmas - 7;
+    } elsif ($now->month == 12 && $now->day <= 25) {
+        my $days_until_christmas = 25 - $now->day;
+        return rand() * 30 > $days_until_christmas - 7;
+    } elsif ($now->month == 12 && $now->day > 25) {
+        my $days_past_christmas = $now->day - 25;
+        return rand() * 7 > $days_past_christmas;
+    } else {
+        return '';
+    }
+}
+
 sub is_sabbath() {
     my $now = DateTime->now(time_zone => LOCATION->{time_zone});
     return
@@ -109,6 +126,21 @@ sub genres_to_use {
             'only-christmas-music' => [@christmas_genres, @christmas_religious_genres],
             'christmas-music' => [@secular_genres, @religious_genres, @christmas_genres, @christmas_religious_genres],
             'music' => [@secular_genres, @religious_genres],
+        }->{$category}->@*
+    ;
+}
+
+sub christmas_genres {
+    my ($category) = @_;
+
+    return
+        {
+            'sabbath-only-christmas-music' => [@christmas_religious_genres],
+            'sabbath-christmas-music' => [@christmas_religious_genres],
+            'sabbath-music' => [],
+            'only-christmas-music' => [@christmas_genres, @christmas_religious_genres],
+            'christmas-music' => [@christmas_genres, @christmas_religious_genres],
+            'music' => [],
         }->{$category}->@*
     ;
 }

@@ -18,7 +18,7 @@ use List::AllUtils qw/ any /;
 
 use JCC::Music::Player::Schema;
 
-use JCC::Music::Player::Rules qw/ update_db_from_file_system category is_sabbath genres_to_use /;
+use JCC::Music::Player::Rules qw/ update_db_from_file_system category is_sabbath genres_to_use enforce_christmas christmas_genres /;
 
 $|++;
 
@@ -70,6 +70,9 @@ track: while (1) {
     # get new track
     while (!@queue) {
         my $rs = available_tracks;
+        if (enforce_christmas) {
+            $rs = $rs->search({ genre => { -in => [ christmas_genres($category) ] } });
+        }
         # prefer 'good' songs
         my $threshold = good_threshold;
         $threshold -= 10 while $threshold > 0 && rand() * 10 < $tolerance;
