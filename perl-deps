@@ -14,3 +14,14 @@ List::AllUtils@0.14
 JSON::XS@3.04
 Try::Tiny@0.31
 File::Slurp@9999.32
+DateTime@1.65
+Keyword::Simple@0.04
+Parse::Keyword@0.09
+true@v1.0.2
+Devel::GlobalDestruction@0.14
+Types::Standard@2.004000
+PerlX::Assert@0.905
+MooX::late@0.100
+Lexical::Accessor@0.014
+MooseX::MungeHas@0.011
+Kavorka@0.039
