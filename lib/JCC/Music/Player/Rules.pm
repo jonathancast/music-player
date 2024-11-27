@@ -105,10 +105,9 @@ sub good_genres() { @religious_genres, @christmas_genres, @christmas_religious_g
 sub christmas {
     my $now = DateTime->now(time_zone => LOCATION->{time_zone});
 
-    my $thanksgiving = $now->clone()->truncate(to => 'day')->set_month(11)->set_day(1) # beginning of November
-        ->truncate(to => 'week')->add(days => 3) # First Thursday
-        ->add(days => 7 * 3) # Fourth Thursday
-    ;
+    my $november_first = $now->clone()->truncate(to => 'month')->set_month(11);
+    my $first_thursday_of_november = $november_first->add(days => (4 - $november_first->dow()) % 7);
+    my $thanksgiving = $first_thursday_of_november->add(days => 7 * 3);
     my $christmas = $now->clone()->truncate(to => 'day')->set_month(12)->set_day(25);
     my $now_epoch = $now->epoch;
     my $end_of_thanksgiving = $sun_local->sunset_datetime($thanksgiving)->epoch;
