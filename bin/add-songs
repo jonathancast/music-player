@@ -40,21 +40,14 @@ sub available_tracks() {
 
 my @queue;
 
-sub hist_length() { 10 }
+sub max_tolerance() { 10 }
 sub good_threshold() { 90 }
-
-my @hist;
-
-sub good_songs() { scalar(grep { $_->score_pct >= good_threshold } @hist) }
 
 sub num_songs() { scalar(@{[ qx{q -c $category} ]}) }
 
 sub page_length() { 20 }
 
 track: while (1) {
-    # make room in @hist for new track
-    shift @hist while @hist > hist_length - 1;
-
     $category = category;
 
     while (num_songs >= page_length) {
@@ -72,14 +65,13 @@ track: while (1) {
         my $rs = available_tracks;
         # prefer 'good' songs
         my $threshold = good_threshold;
-        $threshold -= 10 while $threshold > 0 && rand() * 10 < $tolerance;
+        $threshold -= 10 while $threshold > 0 && rand() * max_tolerance < $tolerance;
         my $lower_threshold = $threshold;
         $lower_threshold -= 10 while $lower_threshold > 0 && rand() * 10 < 5;
         $rs = $rs->apply_threshold($lower_threshold, $threshold);
         @queue = $rs->nth_row->all();
     }
     my $row = shift @queue;
-    push @hist, $row;
 
     if (is_sabbath && $row->score >= good_threshold / 100) {
         printf qq{%s (%d)\n}, $row->filename, $row->score_pct;
@@ -105,7 +97,7 @@ track: while (1) {
             print qq{\n};
             next track;
         } elsif ($key eq '+') {
-            next key if $tolerance >= hist_length;
+            next key if $tolerance >= max_tolerance;
             $tolerance++;
             printf qq{(tol %d) }, $tolerance;
             goto key;
