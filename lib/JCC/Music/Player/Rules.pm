@@ -49,7 +49,7 @@ sub update_db_from_file_system {
                 say STDERR qq{$fn: Assigned genre @{[ $row->genre ]}} if $options{verbose};
             }
             $row->num_plays(0) unless defined $row->num_plays;
-            $row->update();
+            if ($row->in_storage) { $row->update(); } else { $row->insert(); }
         }
     }
     close $fh;
