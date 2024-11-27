@@ -96,6 +96,11 @@ track: while (1) {
         } elsif ($key eq 'w') {
             print qq{\n};
             next track;
+        } elsif ($key eq '?') {
+            system q{ogg123}, $row->filename if $row->filename =~ m{\.ogg$};
+            system q{mpg123}, $row->filename if $row->filename =~ m{\.mp3$};
+            printf "%s (%s) (%d)? ", $row->filename =~ s{^\Q$dir/}{}r, $row->genre, $row->score_pct;
+            goto key;
         } elsif ($key eq '+') {
             next key if $tolerance >= max_tolerance;
             $tolerance++;
