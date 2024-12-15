@@ -15,8 +15,8 @@ use Term::ReadKey;
 use POSIX qw/ WNOHANG setsid /;
 use autodie qw/ :all /;
 
-use JCC::Music::Player::Rules qw/ genres_to_use /;
+use JCC::Music::Player::Rules qw/ category genres_to_use /;
 
 use Data::Dumper;
 
-print Dumper([ genres_to_use(verbose => 1) ]);
+print Dumper([ genres_to_use(category) ]);
