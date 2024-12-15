@@ -5,6 +5,8 @@ use warnings;
 
 use DBIx::Class::Candy -autotable => v1, -perl5 => v12;
 
+use List::Util qw/ max min /;
+
 primary_column id => { data_type => 'int', is_auto_increment => 1, };
 
 column filename => { data_type => 'text', };
@@ -18,12 +20,14 @@ unique_constraint filename => [qw/ filename /];
 sub score_pct { shift->score * 100 }
 
 sub add_score {
-    my ($self, $new_score) = @_;
+    my ($self, $increment) = @_;
 
-    $self->update({
-        score => ($self->score * ($self->num_plays + 0.5) + $new_score) / ($self->num_plays + 0.5 + 1),
-        num_plays => $self->num_plays + 1,
-    });
+    my $new_score =
+          $increment == 0 ? max($self->score - 0.1, $self->score / 2)
+        : $increment == 1 ? min($self->score + 0.1, ($self->score + 1) / 2)
+        : die "Invalid increment to score $increment"
+    ;
+    $self->update({ score => $new_score, num_plays => $self->num_plays + 1, });
 }
 
 1;
