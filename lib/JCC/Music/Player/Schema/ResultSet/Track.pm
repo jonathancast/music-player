@@ -3,12 +3,14 @@ use Moops;
 use v5.24;
 
 class JCC::Music::Player::Schema::ResultSet::Track extends DBIx::Class::ResultSet {
-    use JCC::Music::Player::Rules qw/ good_genres /;
+    use JCC::Music::Player::Rules qw/ @religious_genres @christmas_religious_genres /;
 
     __PACKAGE__->load_components('Helper::ResultSet::CorrelateRelationship');
     __PACKAGE__->load_components('Helper::ResultSet::IgnoreWantarray');
     __PACKAGE__->load_components('Helper::ResultSet::Me');
     __PACKAGE__->load_components('Helper::ResultSet::Shortcut');
+
+    use constant good_genres => @religious_genres, @christmas_religious_genres;
 
     method apply_threshold($lower_threshold, $threshold) {
         $self->search(\[

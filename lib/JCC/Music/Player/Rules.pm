@@ -15,7 +15,10 @@ use List::Util qw/ max /;
 use File::Slurp qw/ read_file write_file /;
 use JSON::XS qw/ decode_json encode_json /;
 
-push our @EXPORT_OK, qw/ category is_sabbath genres_to_use good_genres update_db_from_file_system christmas christmas_genres /;
+push our @EXPORT_OK, qw/
+     category is_sabbath genres_to_use update_db_from_file_system christmas christmas_genres
+     @secular_genres @religious_genres @christmas_genres @christmas_religious_genres
+/;
 
 use constant lat_long_file => qq{$ENV{HOME}/lat-long};
 
@@ -73,10 +76,10 @@ sub is_sabbath() {
     ;
 }
 
-my @secular_genres = ('Country', 'Rock & Roll');
-my @religious_genres = ('Christian', 'Gospel', 'Southern Gospel');
-my @christmas_genres = ('Christmas Songs', 'Winter');
-my @christmas_religious_genres = ('Christmas Carols');
+our @secular_genres = ('Country', 'Rock & Roll');
+our @religious_genres = ('Christian', 'Gospel', 'Southern Gospel');
+our @christmas_genres = ('Christmas Songs', 'Winter');
+our @christmas_religious_genres = ('Christmas Carols');
 
 sub genres_to_use {
     my ($category) = @_;
@@ -99,8 +102,6 @@ sub christmas_genres {
         }->{$category}->@*
     ;
 }
-
-sub good_genres() { @religious_genres, @christmas_genres, @christmas_religious_genres }
 
 sub christmas {
     my $now = DateTime->now(time_zone => LOCATION->{time_zone});
