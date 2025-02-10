@@ -22,11 +22,10 @@ sub score_pct { shift->score * 100 }
 sub add_score {
     my ($self, $increment) = @_;
 
-    my $new_score =
-          $increment == 0 ? max($self->score - 0.1, $self->score / 2)
-        : $increment == 1 ? min($self->score + 0.1, ($self->score + 1) / 2)
-        : die "Invalid increment to score $increment"
-    ;
+    my $new_score = ($self->score * $self->num_plays + $increment) / ($self->num_plays + 1);
+    $new_score = max(0, $self->score - 0.1, $self->score / 2, $new_score);
+    $new_score = min(1, $self->score + 0.1, ($self->score + 1) / 2, $new_score);
+
     $self->update({ score => $new_score, num_plays => $self->num_plays + 1, });
 }
 
