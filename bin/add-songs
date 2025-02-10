@@ -18,7 +18,10 @@ use List::AllUtils qw/ any /;
 
 use JCC::Music::Player::Schema;
 
-use JCC::Music::Player::Rules qw/ update_db_from_file_system category is_sabbath genres_to_use christmas christmas_genres /;
+use JCC::Music::Player::Rules qw/
+    update_db_from_file_system category is_sabbath @religious_genres genres_to_use christmas christmas_genres
+    @religious_genres @christmas_religious_genres
+/;
 
 $|++;
 
@@ -32,6 +35,8 @@ ReadMode 'cbreak';
 my $tolerance = 0;
 
 my $category;
+
+my ($num_tracks, $num_religious_tracks) = (0, 0);
 
 sub available_tracks() {
     $schema->resultset('Track')
@@ -63,6 +68,10 @@ track: while (1) {
     # get new track
     while (!@queue) {
         my $rs = available_tracks;
+        # require 'enough' religious songs
+        if ($num_tracks >= 2 * $num_religious_tracks) {
+            $rs = $rs->search({ genre => { -in => [ @religious_genres, @christmas_religious_genres ] } });
+        }
         # prefer 'good' songs
         my $threshold = good_threshold;
         $threshold -= 10 while $threshold > 0 && rand() * max_tolerance < $tolerance;
@@ -86,6 +95,8 @@ track: while (1) {
     if (defined(my $key = ReadKey(0))) {
         if ($key eq 'y') {
             $row->add_score(1);
+            $num_tracks++;
+            $num_religious_tracks++ if grep { $_ eq $row->genre } @religious_genres, @christmas_religious_genres;
             printf qq{(%d)\n}, $row->score_pct;
             system 'enq', '-a', '-c', $category, $row->filename;
             next track;
